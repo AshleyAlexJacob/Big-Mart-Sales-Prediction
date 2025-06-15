@@ -1,2 +1,4 @@
 pandas==2.3.0
 matplotlib==3.10.3
+ipykernel
+seaborn==0.13.2
