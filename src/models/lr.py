@@ -2,6 +2,8 @@ import pandas as pd
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import root_mean_squared_error, r2_score
+import os
+import pickle
 
 def load_dataset(file_path: str):
     """
@@ -63,6 +65,40 @@ def evaluate_model(model, X_test: pd.DataFrame, y_test: pd.Series):
     r2 = r2_score(y_test, predictions)
     return rmse, r2
 
+def save_model(model_directory: str, model_name:str, model:object):
+    """
+    Function to save the model.
+    
+    :param model_directory: Directory to save the model.
+    :param model_name: Name of the model file.
+    :param model: Model object.
+    """
+    try:
+        os.makedirs(model_directory, exist_ok=True)
+        model_path = os.path.join(model_directory, f"{model_name}.pkl")
+        with open(model_path, "wb") as f:
+            pickle.dump(model, f)
+    except Exception as e:
+        print("Error in Saving Model File\t", e)
+        raise e
+
+def load_model(model_directory: str, model_name:str):
+    """
+    Function to load the model.
+    
+    :param model_directory: Directory of the saved model.
+    :param model_name: Name of the saved model file.
+    """
+    try:
+        model_path = os.path.join(model_directory, f"{model_name}.pkl") 
+        with open(model_path, "rb") as f:
+            loaded_model = pickle.load(f)
+        return loaded_model
+    except Exception as e:
+        print("Error in Loading Model File\t", e)
+        return None
+
+    
 def main(file_path: str, target_column: str, processed_columns: list = None):
     """
     Main function to load data, train and evaluate the model.
@@ -87,3 +123,7 @@ def main(file_path: str, target_column: str, processed_columns: list = None):
     print(f"Model Training Score: {model.score(X_train, y_train)}")
     print(f"RMSE: {rmse}")
     print(f"R^2 Score: {r2}")
+
+    print("Saving Model: ")
+
+    save_model(model_directory= "artifacts", model_name="linear_regression", model= model)
