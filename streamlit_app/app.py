@@ -1,7 +1,14 @@
 import datetime
+import os
 import pandas as pd
 import streamlit as st
 import joblib
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from src.models.lr import load_model
+
+
+# ======================= Encoder Loading Step =================
 
 def load_encoder(encoder_path):
     return joblib.load(encoder_path)
@@ -10,9 +17,16 @@ def load_encoders():
     item_identifier_encoder = load_encoder("artifacts/encoders/item_identifier_encoder.pkl")
     item_type_encoder = load_encoder("artifacts/encoders/item_type_encoder.pkl")
     return item_identifier_encoder, item_type_encoder
-    
+
+
+model = load_model("artifacts", "linear_regression")
+
 
 item_identifier_encoder, item_type_encoder = load_encoders()
+
+# ======================= Encoder Loading Step Ended =================
+
+# ======================= Streamlit UI Code =================
 st.title('Big Mart Sales Prediction')
 
 st.write("ML Streamlit Application")
@@ -23,20 +37,16 @@ item_mrp =  st.number_input("Item MRP")
 established_date = st.date_input("Established Year", datetime.date(2019, 7, 6),)
 # Extract year
 established_year = established_date.year
-
-item_options = {
-    'FDW13': 10,
-    'FDG33': 10,
-    'NCY18': 9,
-    'FDD38': 9,
-    'DRE49': 9
-}
-
-# Just use the keys (you can show counts in labels if needed)
-options = list(item_options.keys())
+item_options = [
+     'FDW13',
+    'FDG33',
+    'NCY18',
+    'FDD38',
+    'DRE49'
+]
 
 # Streamlit selectbox
-item_identifier = st.selectbox("Select Item Identifier", options)
+item_identifier = st.selectbox("Select Item Identifier", item_options)
 
 
 item_types = [
@@ -59,19 +69,12 @@ item_types = [
 ]
 item_type = st.selectbox("Select Item Type", item_types)
 
-# Encode
-identifier_df = pd.DataFrame({"Item_Identifier": [item_identifier]})
-type_df = pd.DataFrame({"Item_Type": [item_type]})
-
-Item_Identifier_encoded = int(item_identifier_encoder.transform(identifier_df).iloc[0, 0])
-
-Item_Type_encoded = int(item_type_encoder.transform(type_df).iloc[0, 0])
-
 fat_contents = [
     "LF",
     "REG",
 ]
 Item_Fat_Content = st.selectbox("Select Item Fat Content", fat_contents)
+
 
 output_locations= [
     "Tier 1",
@@ -99,12 +102,26 @@ Outlet_Size= st.selectbox("Select  Outlet Size", outlet_size)
 
 Outlet_Type= st.selectbox("Select  Outlet Type", outlet_type)
 
+# ======================= Streamlit UI Code Ended =================
+
+# ======================== Feature Encoding =============
+# Encode
+
+# Item Identifier and Item Type Target Encoding
+identifier_df = pd.DataFrame({"Item_Identifier": [item_identifier]})
+type_df = pd.DataFrame({"Item_Type": [item_type]})
+
+
+Item_Identifier_encoded = int(item_identifier_encoder.transform(identifier_df).iloc[0, 0])
+
+Item_Type_encoded = int(item_type_encoder.transform(type_df).iloc[0, 0])
 
 def build_feature_row(
     item_weight, item_visibility, item_mrp, established_year,
     item_identifier_encoded, item_type_encoded,
     item_fat_content, output_location, outlet_size, outlet_type
 ):
+    
     # Start with base columns
     row = {
         'Item_Weight': item_weight,
@@ -136,8 +153,8 @@ def build_feature_row(
     ]
     for typ in outlet_type_options:
         row[f'Outlet_Type_{typ}'] = 1 if outlet_type == typ else 0
-
-    return pd.DataFrame([row])
+    df = pd.DataFrame([row])
+    return df
 
 processed_row = build_feature_row(
     item_weight=item_weight,
@@ -155,4 +172,18 @@ processed_row = build_feature_row(
 st.write("Processed Input Row:")
 st.dataframe(processed_row)
 
-st.button("Predict")
+call_model = st.button("Predict")
+
+if call_model:
+    prediction = model.predict(processed_row)
+    st.markdown(
+        f"""
+        <div style="background-color:#4CAF50;padding:20px;border-radius:10px">
+            <h2 style="color:white;text-align:center;">
+                Predicted Sales: {prediction[0]:,.2f}
+            </h2>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+# ...existing code...

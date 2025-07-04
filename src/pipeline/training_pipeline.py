@@ -14,8 +14,6 @@ processed_columns = [
  'Item_Type_encoded',
  'Item_Fat_Content_encoded_LF',
  'Item_Fat_Content_encoded_REG',
- 'Item_Fat_Content_encoded_LF',
- 'Item_Fat_Content_encoded_REG',
  'Outlet_Location_Type_Tier 1',
  'Outlet_Location_Type_Tier 2',
  'Outlet_Location_Type_Tier 3',
